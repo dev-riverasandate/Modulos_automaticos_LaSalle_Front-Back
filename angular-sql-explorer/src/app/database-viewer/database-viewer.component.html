@@ -1,6 +1,7 @@
 <div *ngIf="loading">Cargando...</div>
 <div *ngIf="error">{{ error }}</div>
 
+<!-- Listado de bases de datos -->
 <mat-list *ngIf="!loading && !error && !selectedDatabase">
   <mat-list-item *ngFor="let db of databases" (click)="onSelectDatabase(db)" style="cursor:pointer;">
     <mat-icon>storage</mat-icon>
@@ -8,13 +9,49 @@
   </mat-list-item>
 </mat-list>
 
-<div *ngIf="selectedDatabase && !loading && !error">
-  <h3>Tablas en {{ selectedDatabase }}</h3>
-  <button mat-button (click)="selectedDatabase = null; tables = [];">Volver a bases de datos</button>
-  <mat-list>
-    <mat-list-item *ngFor="let table of tables">
-      <mat-icon>table_chart</mat-icon>
-      {{ table.TABLE_NAME }}
-    </mat-list-item>
-  </mat-list>
+<!-- Vista de 3 columnas -->
+<div *ngIf="selectedDatabase && !loading && !error" class="three-columns">
+  <!-- Columna 1: Tablas -->
+  <div class="column">
+    <h3>Tablas en {{ selectedDatabase }}</h3>
+    <button mat-button (click)="selectedDatabase = null; tables = []; selectedTables = []; tableColumns = {}; selectedFields = [];">Volver a bases de datos</button>
+    <mat-list>
+      <mat-list-item *ngFor="let table of tables">
+        <mat-checkbox (change)="onToggleTableSelection(table)" [checked]="selectedTables.includes(table.TABLE_NAME)">
+          {{ table.TABLE_NAME }}
+        </mat-checkbox>
+      </mat-list-item>
+    </mat-list>
+  </div>
+
+  <!-- Columna 2: Campos de tablas seleccionadas -->
+  <div class="column">
+    <h4>Campos de tablas seleccionadas</h4>
+    <div *ngFor="let table of selectedTables">
+      <div class="fields-list-title">{{ table }}</div>
+      <div cdkDropList [id]="'fieldsList_' + table"
+     [cdkDropListData]="tableColumns[table]"
+     [cdkDropListConnectedTo]="['selectedFieldsList']"
+     class="fields-list">
+        <div *ngFor="let column of tableColumns[table]" cdkDrag>
+          {{ column.COLUMN_NAME }} <span style="color: #888;">({{ column.DATA_TYPE }})</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Columna 3: Drag & Drop -->
+  <div class="column">
+    <h4>Campos seleccionados (Drag & Drop aquí)</h4>
+    <div cdkDropList
+     id="selectedFieldsList"
+     [cdkDropListData]="selectedFields"
+     [cdkDropListConnectedTo]="connectedDropLists"
+     (cdkDropListDropped)="drop($event)"
+     class="selected-fields">
+      <div *ngFor="let field of selectedFields">
+        {{ field.COLUMN_NAME }} <span style="color: #888;">({{ field.DATA_TYPE }})</span>
+      </div>
+    </div>
+  </div>
 </div>

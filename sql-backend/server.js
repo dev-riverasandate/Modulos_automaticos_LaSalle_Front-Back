@@ -48,6 +48,27 @@ app.get('/api/databases/:dbName/tables', async (req, res) => {
 });
 // Fin para obtener tablas de una base de datos específica
 
+//Inicio para obtener columnas de una tabla específica
+app.get('/api/databases/:dbName/tables/:tableName/columns', async (req, res) => {
+  const dbName = req.params.dbName;
+  const tableName = req.params.tableName;
+  const dbConfig = { ...config, database: dbName };
+  try {
+    await sql.connect(dbConfig);
+    const result = await sql.query`
+      SELECT COLUMN_NAME, DATA_TYPE
+      FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_NAME = ${tableName}
+      ORDER BY ORDINAL_POSITION
+    `;
+    res.json(result.recordset);
+  } catch (err) {
+    console.error('Error al consultar columnas:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+//Fin para obtener columnas de una tabla específica
+
 app.listen(3000, () => {
   console.log('Backend corriendo en http://localhost:3000');
 });

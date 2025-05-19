@@ -19,4 +19,10 @@ export class DatabaseService {
 }
 //Fin para mostrar tablas
 
+//Inicio de metodo para mostrar columnas
+getColumns(databaseName: string, tableName: string) {
+  return this.http.get<any[]>(`${this.apiUrl}/${databaseName}/tables/${tableName}/columns`);
+}
+//Fin de metodo para mostrar columnas
+
 }
