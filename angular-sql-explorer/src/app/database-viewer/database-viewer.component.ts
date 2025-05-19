@@ -13,6 +13,8 @@ import { DatabaseService } from '../services/database.service';
 })
 export class DatabaseViewerComponent implements OnInit {
   databases: any[] = [];
+  tables: any[] = [];
+  selectedDatabase: string | null = null;
   loading = false;
   error: string | null = null;
 
@@ -36,4 +38,22 @@ export class DatabaseViewerComponent implements OnInit {
       }
     });
   }
+//Inicio del componente para manejar la seleccion y mostrar tablas
+  onSelectDatabase(db: any): void {
+    this.selectedDatabase = db.name;
+    this.tables = [];
+    this.loading = true;
+    this.error = null;
+    this.databaseService.getTables(db.name).subscribe({
+      next: (data) => {
+        this.tables = data;
+        this.loading = false;
+      },
+      error: (err) => {
+        this.error = 'Error al obtener las tablas';
+        this.loading = false;
+      }
+    });
+  }
+  //Fin del componente para manejar la seleccion y mostrar tablas
 }

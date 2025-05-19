@@ -27,6 +27,27 @@ app.get('/api/databases', async (req, res) => {
   }
 });
 
+// Inicoo para obtener tablas de una base de datos específica
+app.get('/api/databases/:dbName/tables', async (req, res) => {
+  const dbName = req.params.dbName;
+  // Clona la configuración y cambia la base de datos
+  const dbConfig = { ...config, database: dbName };
+  try {
+    await sql.connect(dbConfig);
+    const result = await sql.query`
+      SELECT TABLE_NAME 
+      FROM INFORMATION_SCHEMA.TABLES 
+      WHERE TABLE_TYPE = 'BASE TABLE'
+      ORDER BY TABLE_NAME
+    `;
+    res.json(result.recordset);
+  } catch (err) {
+    console.error('Error al consultar tablas:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+// Fin para obtener tablas de una base de datos específica
+
 app.listen(3000, () => {
   console.log('Backend corriendo en http://localhost:3000');
 });

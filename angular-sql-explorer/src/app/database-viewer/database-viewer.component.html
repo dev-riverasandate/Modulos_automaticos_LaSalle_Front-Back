@@ -1,8 +1,20 @@
-<div *ngIf="loading">Cargando bases de datos...</div>
+<div *ngIf="loading">Cargando...</div>
 <div *ngIf="error">{{ error }}</div>
-<mat-list *ngIf="!loading && !error">
-  <mat-list-item *ngFor="let db of databases">
+
+<mat-list *ngIf="!loading && !error && !selectedDatabase">
+  <mat-list-item *ngFor="let db of databases" (click)="onSelectDatabase(db)" style="cursor:pointer;">
     <mat-icon>storage</mat-icon>
     {{ db.name }}
   </mat-list-item>
 </mat-list>
+
+<div *ngIf="selectedDatabase && !loading && !error">
+  <h3>Tablas en {{ selectedDatabase }}</h3>
+  <button mat-button (click)="selectedDatabase = null; tables = [];">Volver a bases de datos</button>
+  <mat-list>
+    <mat-list-item *ngFor="let table of tables">
+      <mat-icon>table_chart</mat-icon>
+      {{ table.TABLE_NAME }}
+    </mat-list-item>
+  </mat-list>
+</div>

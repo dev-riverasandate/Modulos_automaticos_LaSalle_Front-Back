@@ -13,4 +13,10 @@ export class DatabaseService {
   getDatabases(): Observable<any[]> {
     return this.http.get<any[]>(this.apiUrl);
   }
+//Inicio para mostrar tablas
+  getTables(databaseName: string) {
+  return this.http.get<any[]>(`${this.apiUrl}/${databaseName}/tables`);
+}
+//Fin para mostrar tablas
+
 }
