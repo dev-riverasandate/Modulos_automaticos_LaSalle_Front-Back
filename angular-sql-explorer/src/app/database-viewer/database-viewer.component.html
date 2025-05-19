@@ -1,0 +1,8 @@
+<div *ngIf="loading">Cargando bases de datos...</div>
+<div *ngIf="error">{{ error }}</div>
+<mat-list *ngIf="!loading && !error">
+  <mat-list-item *ngFor="let db of databases">
+    <mat-icon>storage</mat-icon>
+    {{ db.name }}
+  </mat-list-item>
+</mat-list>
