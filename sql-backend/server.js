@@ -56,10 +56,10 @@ app.get('/api/databases/:dbName/tables/:tableName/columns', async (req, res) => 
   try {
     await sql.connect(dbConfig);
     const result = await sql.query`
-      SELECT COLUMN_NAME, DATA_TYPE
-      FROM INFORMATION_SCHEMA.COLUMNS
-      WHERE TABLE_NAME = ${tableName}
-      ORDER BY ORDINAL_POSITION
+      SELECT TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE
+  FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_NAME = ${tableName}
+  ORDER BY ORDINAL_POSITION
     `;
     res.json(result.recordset);
   } catch (err) {
@@ -68,6 +68,35 @@ app.get('/api/databases/:dbName/tables/:tableName/columns', async (req, res) => 
   }
 });
 //Fin para obtener columnas de una tabla específica
+
+//Inicio para obtener claves foráneas de una base de datos
+app.get('/api/databases/:dbName/foreign-keys', async (req, res) => {
+  const dbName = req.params.dbName;
+  const dbConfig = { ...config, database: dbName };
+  try {
+    await sql.connect(dbConfig);
+    const result = await sql.query(`
+      SELECT
+        fk.name AS FK_NAME,
+        tp.name AS PARENT_TABLE,
+        cp.name AS PARENT_COLUMN,
+        tr.name AS REF_TABLE,
+        cr.name AS REF_COLUMN
+      FROM sys.foreign_keys fk
+      INNER JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id = fk.object_id
+      INNER JOIN sys.tables tp ON fkc.parent_object_id = tp.object_id
+      INNER JOIN sys.columns cp ON fkc.parent_object_id = cp.object_id AND fkc.parent_column_id = cp.column_id
+      INNER JOIN sys.tables tr ON fkc.referenced_object_id = tr.object_id
+      INNER JOIN sys.columns cr ON fkc.referenced_object_id = cr.object_id AND fkc.referenced_column_id = cr.column_id
+      ORDER BY fk.name
+    `);
+    res.json(result.recordset);
+  } catch (err) {
+    console.error('Error al consultar claves foráneas:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+//Fin para obtener claves foráneas de una base de datos
 
 app.listen(3000, () => {
   console.log('Backend corriendo en http://localhost:3000');

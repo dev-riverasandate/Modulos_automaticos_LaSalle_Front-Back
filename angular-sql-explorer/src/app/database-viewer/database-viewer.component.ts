@@ -24,6 +24,7 @@ export class DatabaseViewerComponent implements OnInit {
   selectedTables: string[] = [];
   tableColumns: { [table: string]: any[] } = {};
   selectedFields: any[] = [];
+  foreignKeys: any[] = [];
 
   constructor(private databaseService: DatabaseService) {}
 
@@ -64,6 +65,10 @@ export class DatabaseViewerComponent implements OnInit {
       this.loading = false;
     }
   });
+  this.databaseService.getForeignKeys(db.name).subscribe({
+    next: (data) => { this.foreignKeys = data; },
+    error: () => { this.foreignKeys = []; }
+  });
 }
   //Fin del componente para manejar la seleccion y mostrar tablas
 
@@ -82,7 +87,13 @@ export class DatabaseViewerComponent implements OnInit {
 loadColumns(database: string, table: string): void {
   this.databaseService.getColumns(database, table).subscribe({
     next: (columns) => {
-      this.tableColumns[table] = columns;
+      // Si columns ya trae TABLE_SCHEMA y TABLE_NAME, no necesitas esto:
+      // Si no, asígnalos aquí (ejemplo con esquema 'dbo'):
+      this.tableColumns[table] = columns.map(col => ({
+        ...col,
+        TABLE_NAME: table,
+        TABLE_SCHEMA: col.TABLE_SCHEMA || 'dbo'
+      }));
     },
     error: () => {
       this.tableColumns[table] = [];
@@ -106,4 +117,51 @@ drop(event: CdkDragDrop<any[]>) {
   get connectedDropLists(): string[] {
   return this.selectedTables.map(t => 'fieldsList_' + t);
 }
+
+get generatedQuery(): string {
+  if (!this.selectedFields.length) return '-- Selecciona campos para generar la consulta --';
+
+  // Agrupa campos por tabla
+  const fieldsByTable: { [key: string]: any[] } = {};
+  this.selectedFields.forEach(field => {
+    const schema = field.TABLE_SCHEMA || '';
+    const table = field.TABLE_NAME || '';
+    const key = `${schema}.${table}`;
+    if (!fieldsByTable[key]) fieldsByTable[key] = [];
+    fieldsByTable[key].push(field);
+  });
+
+  // SELECT parte: solo los nombres de columna
+  const selectFields = this.selectedFields
+    .map(field => `[${field.COLUMN_NAME}]`)
+    .join(',\n    ');
+
+  // FROM parte: si hay una tabla, solo esa; si hay varias, CROSS JOIN
+  const tables = Object.keys(fieldsByTable);
+  let fromClause = '';
+  if (tables.length === 1) {
+    const [schema, table] = tables[0].split('.');
+    fromClause = `[${this.selectedDatabase}].[${schema}].[${table}]`;
+  } else if (tables.length > 1) {
+    fromClause = tables.map(tbl => {
+      const [schema, table] = tbl.split('.');
+      return `[${this.selectedDatabase}].[${schema}].[${table}]`;
+    }).join(',\n    ');
+  }
+
+  // ORDER BY por la primera columna seleccionada
+  let orderByClause = '';
+  if (this.selectedFields.length > 0) {
+    orderByClause = `\nORDER BY [${this.selectedFields[0].COLUMN_NAME}]`;
+  }
+
+  // Script final
+  return `SELECT
+    ${selectFields}
+FROM
+    ${fromClause}
+${orderByClause}
+;`;
+}
+
 }

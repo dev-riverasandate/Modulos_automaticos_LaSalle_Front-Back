@@ -7,6 +7,7 @@ import { Observable } from 'rxjs';
 })
 export class DatabaseService {
   private apiUrl = 'http://localhost:3000/api/databases';
+  foreignKeys: any[] = [];
 
   constructor(private http: HttpClient) {}
 
@@ -24,5 +25,11 @@ getColumns(databaseName: string, tableName: string) {
   return this.http.get<any[]>(`${this.apiUrl}/${databaseName}/tables/${tableName}/columns`);
 }
 //Fin de metodo para mostrar columnas
+
+//Inicio del metodod para mostrar las llaves foraneas
+getForeignKeys(database: string) {
+  return this.http.get<any[]>(`${this.apiUrl}/databases/${database}/foreign-keys`);
+}
+//Fin del metodod para mostrar las llaves foraneas
 
 }
