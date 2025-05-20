@@ -13,7 +13,7 @@
 <div *ngIf="selectedDatabase && !loading && !error" class="three-columns">
   <!-- Columna 1: Tablas -->
   <div class="column">
-    <h3>Tablas en {{ selectedDatabase }}</h3>
+    <h3>Tabla Seleccionada '{{ selectedDatabase }}'</h3>
     <button mat-button (click)="selectedDatabase = null; tables = []; selectedTables = []; tableColumns = {}; selectedFields = [];">Volver a bases de datos</button>
     <mat-list>
       <mat-list-item *ngFor="let table of tables">
@@ -55,6 +55,7 @@
     </div>
   </div>
 
+   <!-- Columna 4: Script -->
   <div class="column">
     <h4>Script</h4>
     <div><pre>{{ generatedQuery }}</pre></div>

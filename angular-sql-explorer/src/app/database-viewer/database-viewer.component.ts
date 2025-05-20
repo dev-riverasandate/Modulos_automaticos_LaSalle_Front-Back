@@ -131,10 +131,15 @@ get generatedQuery(): string {
     fieldsByTable[key].push(field);
   });
 
-  // SELECT parte: solo los nombres de columna
+  // SELECT parte: solo los nombres de columna con esquema
+  // const selectFields = this.selectedFields
+  // .map(field => `${field.TABLE_SCHEMA}.[${field.COLUMN_NAME}]`)
+  // .join(',\n    ');
+  
+  // SELECT parte: solo los nombres de columna sin esquema
   const selectFields = this.selectedFields
-    .map(field => `[${field.COLUMN_NAME}]`)
-    .join(',\n    ');
+  .map(field => `${field.COLUMN_NAME}`)
+  .join(',\n    ');
 
   // FROM parte: si hay una tabla, solo esa; si hay varias, CROSS JOIN
   const tables = Object.keys(fieldsByTable);
