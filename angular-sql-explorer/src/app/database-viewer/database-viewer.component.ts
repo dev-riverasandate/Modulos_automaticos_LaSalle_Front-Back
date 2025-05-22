@@ -156,17 +156,16 @@ get generatedQuery(): string {
   }
 
   // ORDER BY por la primera columna seleccionada
-  let orderByClause = '';
-  if (this.selectedFields.length > 0) {
-    orderByClause = `\nORDER BY [${this.selectedFields[0].COLUMN_NAME}]`;
-  }
+  // let orderByClause = '';
+  // if (this.selectedFields.length > 0) {
+  //   orderByClause = `\nORDER BY [${this.selectedFields[0].COLUMN_NAME}]`;
+  // }
 
   // Script final
   return `SELECT
     ${selectFields}
 FROM
     ${fromClause}
-${orderByClause}
 ;`;
 }
 
