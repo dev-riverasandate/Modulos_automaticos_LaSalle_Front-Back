@@ -173,18 +173,19 @@ onMenuAction1() {
   const nombreModulo = prompt('Nombre del nuevo módulo (ej: md_escolar):');
   if (!nombreModulo) return;
   const sqlScript = this.generatedQuery; 
-  const { COLUMNS, DATABASE, TABLE_SCHEMA, TABLE_NAME } = this.extractSqlParts(sqlScript);
+const { COLUMNS, DATABASE, TABLE_SCHEMA, TABLE_NAME, ID_COLUMN } = this.extractSqlParts(sqlScript);
 
-  this.http.post('http://localhost:3000/api/clonar-modulo', {
-    nombreModulo,
-    COLUMNS,
-    DATABASE,
-    TABLE_SCHEMA,
-    TABLE_NAME
-  }).subscribe({
-    next: (resp: any) => alert(resp.message),
-    error: (err) => alert('Error: ' + (err.error?.error || err.message))
-  });
+this.http.post('http://localhost:3000/api/clonar-modulo', {
+  nombreModulo,
+  COLUMNS,
+  DATABASE,
+  TABLE_SCHEMA,
+  TABLE_NAME,
+  ID_COLUMN
+}).subscribe({
+  next: (resp: any) => alert(resp.message),
+  error: (err) => alert('Error: ' + (err.error?.error || err.message))
+});
 }
 
 extractSqlParts(sqlScript: string) {
@@ -198,7 +199,23 @@ extractSqlParts(sqlScript: string) {
   const TABLE_SCHEMA = fromMatch ? fromMatch[2] : '';
   const TABLE_NAME = fromMatch ? fromMatch[3] : '';
 
-  return { COLUMNS, DATABASE, TABLE_SCHEMA, TABLE_NAME };
+  // Busca la PK real
+  let ID_COLUMN = this.getPrimaryKey(TABLE_NAME);
+  // Si no hay PK, usa la primera columna seleccionada como fallback
+  if (!ID_COLUMN && COLUMNS) {
+    ID_COLUMN = COLUMNS.split(',')[0].trim();
+  }
+
+  return { COLUMNS, DATABASE, TABLE_SCHEMA, TABLE_NAME, ID_COLUMN };
+}
+
+getPrimaryKey(table: string): string | null {
+  // Busca en foreignKeys si hay una PK para la tabla seleccionada
+  // Suponiendo que tu backend te da la PK en foreignKeys o puedes agregar un endpoint para PKs
+  const pk = this.foreignKeys.find(fk =>
+    fk.PARENT_TABLE === table && fk.FK_NAME && fk.PARENT_COLUMN
+  );
+  return pk ? pk.PARENT_COLUMN : null;
 }
 
 }

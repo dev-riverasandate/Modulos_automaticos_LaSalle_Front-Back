@@ -37,9 +37,9 @@ export default class ApiBaseService {
         return pool.request()
           .input('ID', mssql.Int, id)
           .query(`
-            SELECT aca_nic_id, aca_nic_id_nivel, aca_nic_id_campus, aca_nic_desc_nivel, aca_nic_id_nivel_si
-            FROM [INTEGRACION].[academico].[aca_niveles_campus]
-            WHERE aca_nic_id = @ID
+            SELECT [COLUMNS]
+            FROM [[DATABASE]].[[TABLE_SCHEMA]].[[TABLE_NAME]]
+            WHERE [ID_COLUMN] = @ID
           `);
       })
       .then(result => {

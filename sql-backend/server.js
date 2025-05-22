@@ -70,6 +70,24 @@ app.get('/api/databases/:dbName/tables/:tableName/columns', async (req, res) => 
   }
 });
 
+app.get('/api/databases/:dbName/tables/:tableName/primary-key', async (req, res) => {
+  const dbName = req.params.dbName;
+  const tableName = req.params.tableName;
+  const dbConfig = { ...config, database: dbName };
+  try {
+    await sql.connect(dbConfig);
+    const result = await sql.query(`
+      SELECT COLUMN_NAME
+      FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+      WHERE OBJECTPROPERTY(OBJECT_ID(CONSTRAINT_SCHEMA + '.' + QUOTENAME(CONSTRAINT_NAME)), 'IsPrimaryKey') = 1
+        AND TABLE_NAME = '${tableName}'
+    `);
+    res.json(result.recordset);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/databases/:dbName/foreign-keys', async (req, res) => {
   const dbName = req.params.dbName;
   const dbConfig = { ...config, database: dbName };
@@ -103,7 +121,7 @@ function pascalCase(str) {
   return str.replace(/(^|_)(\w)/g, (_, __, c) => c.toUpperCase());
 }
 
-async function cloneAndRenameModule(baseDir, destDir, nuevoModulo, COLUMNS, DATABASE, TABLE_SCHEMA, TABLE_NAME) {
+async function cloneAndRenameModule(baseDir, destDir, nuevoModulo, COLUMNS, DATABASE, TABLE_SCHEMA, TABLE_NAME, ID_COLUMN) {
   const nuevoModuloPascal = pascalCase(nuevoModulo);
   async function copyDir(src, dest) {
     await fsp.mkdir(dest, { recursive: true });
@@ -125,7 +143,8 @@ async function cloneAndRenameModule(baseDir, destDir, nuevoModulo, COLUMNS, DATA
           .replace(/\[COLUMNS\]/g, COLUMNS)
           .replace(/\[\[DATABASE\]\]/g, `[${DATABASE}]`)
           .replace(/\[\[TABLE_SCHEMA\]\]/g, `[${TABLE_SCHEMA}]`)
-          .replace(/\[\[TABLE_NAME\]\]/g, `[${TABLE_NAME}]`);
+          .replace(/\[\[TABLE_NAME\]\]/g, `[${TABLE_NAME}]`)
+          .replace(/\[ID_COLUMN\]/g, ID_COLUMN); // Ahora sí existe
         await fsp.writeFile(destPath, content, 'utf8');
       }
     }
@@ -134,7 +153,7 @@ async function cloneAndRenameModule(baseDir, destDir, nuevoModulo, COLUMNS, DATA
 }
 
 app.post('/api/clonar-modulo', async (req, res) => {
-  const { nombreModulo, COLUMNS, DATABASE, TABLE_SCHEMA, TABLE_NAME } = req.body;
+  const { nombreModulo, COLUMNS, DATABASE, TABLE_SCHEMA, TABLE_NAME, ID_COLUMN } = req.body;
   if (!nombreModulo) {
     return res.status(400).json({ error: 'Falta el nombre del módulo' });
   }
@@ -149,7 +168,8 @@ app.post('/api/clonar-modulo', async (req, res) => {
       COLUMNS,
       DATABASE,
       TABLE_SCHEMA,
-      TABLE_NAME
+      TABLE_NAME,
+      ID_COLUMN
     );
     res.json({ success: true, message: `Módulo ${nombreModulo} creado en api_destino.` });
   } catch (err) {
