@@ -10,8 +10,8 @@ export default class ApiBaseService {
     await connectionMSSQL.connect()
       .then(pool => {
         return pool.request().query(`
-          SELECT aca_nic_id, aca_nic_id_nivel, aca_nic_id_campus, aca_nic_desc_nivel, aca_nic_id_nivel_si
-          FROM [INTEGRACION].[academico].[aca_niveles_campus]
+          SELECT [COLUMNS]
+          FROM [[DATABASE]].[[TABLE_SCHEMA]].[[TABLE_NAME]]
         `);
       })
       .then(result => {
@@ -26,7 +26,7 @@ export default class ApiBaseService {
       });
 
     return data;
-  }
+}
 
   async getById(id: number): Promise<NivelCampus | null> {
     let data: NivelCampus | null = null;

@@ -173,12 +173,32 @@ onMenuAction1() {
   const nombreModulo = prompt('Nombre del nuevo módulo (ej: md_escolar):');
   if (!nombreModulo) return;
   const sqlScript = this.generatedQuery; 
+  const { COLUMNS, DATABASE, TABLE_SCHEMA, TABLE_NAME } = this.extractSqlParts(sqlScript);
 
-  this.http.post('http://localhost:3000/api/clonar-modulo', { nombreModulo, sqlScript })
-    .subscribe({
-      next: (resp: any) => alert(resp.message),
-      error: (err) => alert('Error: ' + (err.error?.error || err.message))
-    });
+  this.http.post('http://localhost:3000/api/clonar-modulo', {
+    nombreModulo,
+    COLUMNS,
+    DATABASE,
+    TABLE_SCHEMA,
+    TABLE_NAME
+  }).subscribe({
+    next: (resp: any) => alert(resp.message),
+    error: (err) => alert('Error: ' + (err.error?.error || err.message))
+  });
+}
+
+extractSqlParts(sqlScript: string) {
+  // Extrae columnas
+  const selectMatch = sqlScript.match(/SELECT\s+([\s\S]+?)\s+FROM/i);
+  const COLUMNS = selectMatch ? selectMatch[1].replace(/\s+/g, ' ').replace(/,$/, '').trim() : '';
+
+  // Extrae FROM
+  const fromMatch = sqlScript.match(/FROM\s+\[([^\]]+)\]\.\[([^\]]+)\]\.\[([^\]]+)\]/i);
+  const DATABASE = fromMatch ? fromMatch[1] : '';
+  const TABLE_SCHEMA = fromMatch ? fromMatch[2] : '';
+  const TABLE_NAME = fromMatch ? fromMatch[3] : '';
+
+  return { COLUMNS, DATABASE, TABLE_SCHEMA, TABLE_NAME };
 }
 
 }
