@@ -1,9 +1,13 @@
 const express = require('express');
 const cors = require('cors');
 const sql = require('mssql');
+const fs = require('fs');
+const fsp = require('fs/promises');
+const path = require('path');
 
 const app = express();
 app.use(cors());
+app.use(express.json()); // Para recibir JSON en POST
 
 const config = {
   user: 'arivera',
@@ -16,21 +20,21 @@ const config = {
   }
 };
 
+// --- ENDPOINTS DE BASE DE DATOS (NO MODIFICAR) ---
+
 app.get('/api/databases', async (req, res) => {
   try {
     await sql.connect(config);
     const result = await sql.query`SELECT name FROM sys.databases`;
     res.json(result.recordset);
   } catch (err) {
-    console.error('Error al consultar bases de datos:', err); // <-- Agrega esto
+    console.error('Error al consultar bases de datos:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// Inicoo para obtener tablas de una base de datos específica
 app.get('/api/databases/:dbName/tables', async (req, res) => {
   const dbName = req.params.dbName;
-  // Clona la configuración y cambia la base de datos
   const dbConfig = { ...config, database: dbName };
   try {
     await sql.connect(dbConfig);
@@ -46,9 +50,7 @@ app.get('/api/databases/:dbName/tables', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-// Fin para obtener tablas de una base de datos específica
 
-//Inicio para obtener columnas de una tabla específica
 app.get('/api/databases/:dbName/tables/:tableName/columns', async (req, res) => {
   const dbName = req.params.dbName;
   const tableName = req.params.tableName;
@@ -57,9 +59,9 @@ app.get('/api/databases/:dbName/tables/:tableName/columns', async (req, res) => 
     await sql.connect(dbConfig);
     const result = await sql.query`
       SELECT TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE
-  FROM INFORMATION_SCHEMA.COLUMNS
-  WHERE TABLE_NAME = ${tableName}
-  ORDER BY ORDINAL_POSITION
+      FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_NAME = ${tableName}
+      ORDER BY ORDINAL_POSITION
     `;
     res.json(result.recordset);
   } catch (err) {
@@ -67,9 +69,7 @@ app.get('/api/databases/:dbName/tables/:tableName/columns', async (req, res) => 
     res.status(500).json({ error: err.message });
   }
 });
-//Fin para obtener columnas de una tabla específica
 
-//Inicio para obtener claves foráneas de una base de datos
 app.get('/api/databases/:dbName/foreign-keys', async (req, res) => {
   const dbName = req.params.dbName;
   const dbConfig = { ...config, database: dbName };
@@ -96,7 +96,55 @@ app.get('/api/databases/:dbName/foreign-keys', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-//Fin para obtener claves foráneas de una base de datos
+
+// --- CLONADOR DE MODULOS ---
+
+function pascalCase(str) {
+  return str.replace(/(^|_)(\w)/g, (_, __, c) => c.toUpperCase());
+}
+
+async function cloneAndRenameModule(baseDir, destDir, nuevoModulo) {
+  const nuevoModuloPascal = pascalCase(nuevoModulo);
+  async function copyDir(src, dest) {
+    await fsp.mkdir(dest, { recursive: true });
+    const entries = await fsp.readdir(src, { withFileTypes: true });
+    for (let entry of entries) {
+      const srcPath = path.join(src, entry.name);
+      let destName = entry.name
+        .replace(/api_base/g, nuevoModulo)
+        .replace(/ApiBase/g, nuevoModuloPascal);
+      const destPath = path.join(dest, destName);
+      if (entry.isDirectory()) {
+        await copyDir(srcPath, destPath);
+      } else {
+        let content = await fsp.readFile(srcPath, 'utf8');
+        content = content
+          .replace(/api_base/g, nuevoModulo)
+          .replace(/ApiBase/g, nuevoModuloPascal)
+          .replace(/\[nom_proy\]/g, nuevoModulo);
+        await fsp.writeFile(destPath, content, 'utf8');
+      }
+    }
+  }
+  await copyDir(baseDir, destDir);
+}
+
+app.post('/api/clonar-modulo', async (req, res) => {
+  const { nombreModulo } = req.body;
+  if (!nombreModulo) {
+    return res.status(400).json({ error: 'Falta el nombre del módulo' });
+  }
+  const baseDir = path.join(__dirname, 'public', 'api_base', 'api_base');
+  const destDir = path.join(__dirname, 'public', 'api_destino', nombreModulo);
+
+  try {
+    await cloneAndRenameModule(baseDir, destDir, nombreModulo);
+    res.json({ success: true, message: `Módulo ${nombreModulo} creado en api_destino.` });
+  } catch (err) {
+    console.error('Error al clonar módulo:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 app.listen(3000, () => {
   console.log('Backend corriendo en http://localhost:3000');

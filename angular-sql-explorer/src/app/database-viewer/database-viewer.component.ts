@@ -6,6 +6,7 @@ import { DatabaseService } from '../services/database.service';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { CdkDragDrop, transferArrayItem } from '@angular/cdk/drag-drop';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { HttpClient } from '@angular/common/http';
 
 
 @Component({
@@ -26,7 +27,7 @@ export class DatabaseViewerComponent implements OnInit {
   selectedFields: any[] = [];
   foreignKeys: any[] = [];
 
-  constructor(private databaseService: DatabaseService) {}
+  constructor(private databaseService: DatabaseService,private http: HttpClient) {}
 
   ngOnInit(): void {
     this.fetchDatabases();
@@ -167,6 +168,18 @@ FROM
     ${fromClause}
 ${orderByClause}
 ;`;
+}
+
+onMenuAction1() {
+  const nombreModulo = prompt('Nombre del nuevo módulo (ej: md_escolar):');
+  if (!nombreModulo) return;
+  const sqlScript = this.generatedQuery; 
+
+  this.http.post('http://localhost:3000/api/clonar-modulo', { nombreModulo, sqlScript })
+    .subscribe({
+      next: (resp: any) => alert(resp.message),
+      error: (err) => alert('Error: ' + (err.error?.error || err.message))
+    });
 }
 
 }
