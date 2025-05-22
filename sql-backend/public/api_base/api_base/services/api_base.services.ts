@@ -58,30 +58,31 @@ export default class ApiBaseService {
     return data;
   }
 
-  async create(data: Omit<NivelCampus, 'aca_nic_id'>): Promise<void> {
-    const connectionMSSQL = new mssql.ConnectionPool(dbSettingsMMSQL);
 
-    await connectionMSSQL.connect()
-      .then(pool => {
-        return pool.request()
-          .input('aca_nic_id_nivel', mssql.Int, data.aca_nic_id_nivel)
-          .input('aca_nic_id_campus', mssql.Int, data.aca_nic_id_campus)
-          .input('aca_nic_desc_nivel', mssql.VarChar, data.aca_nic_desc_nivel)
-          .input('aca_nic_id_nivel_si', mssql.Int, data.aca_nic_id_nivel_si)
-          .query(`
-            INSERT INTO [INTEGRACION].[academico].[aca_niveles_campus]
-            (aca_nic_id_nivel, aca_nic_id_campus, aca_nic_desc_nivel, aca_nic_id_nivel_si)
-            VALUES (@aca_nic_id_nivel, @aca_nic_id_campus, @aca_nic_desc_nivel, @aca_nic_id_nivel_si)
-          `);
-      })
-      .catch(err => {
-        console.log("ERROR:", err);
-        throw err;
-      })
-      .finally(() => {
-        connectionMSSQL.close();
-      });
-  }
+  async create(data: Omit<NivelCampus, '[ID_COLUMN]'>): Promise<void> {
+  const connectionMSSQL = new mssql.ConnectionPool(dbSettingsMMSQL);
+
+  await connectionMSSQL.connect()
+    .then(pool => {
+      return pool.request()
+        // Aquí puedes dejar los .input() como marcadores si quieres automatizarlo aún más
+        // o bien, que el backend los reemplace por los campos correctos
+        [INPUTS]
+        .query(`
+          INSERT INTO [[DATABASE]].[[TABLE_SCHEMA]].[[TABLE_NAME]]
+          ([INSERT_COLUMNS])
+          VALUES ([INSERT_VALUES])
+        `);
+    })
+    .catch(err => {
+      console.log("ERROR:", err);
+      throw err;
+    })
+    .finally(() => {
+      connectionMSSQL.close();
+    });
+}
+
 
   async update(id: number, data: Omit<NivelCampus, 'aca_nic_id'>): Promise<void> {
     const connectionMSSQL = new mssql.ConnectionPool(dbSettingsMMSQL);

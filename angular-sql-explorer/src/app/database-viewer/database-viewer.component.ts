@@ -173,19 +173,25 @@ onMenuAction1() {
   const nombreModulo = prompt('Nombre del nuevo módulo (ej: md_escolar):');
   if (!nombreModulo) return;
   const sqlScript = this.generatedQuery; 
-const { COLUMNS, DATABASE, TABLE_SCHEMA, TABLE_NAME, ID_COLUMN } = this.extractSqlParts(sqlScript);
+  const { COLUMNS, DATABASE, TABLE_SCHEMA, TABLE_NAME, ID_COLUMN } = this.extractSqlParts(sqlScript);
 
-this.http.post('http://localhost:3000/api/clonar-modulo', {
-  nombreModulo,
-  COLUMNS,
-  DATABASE,
-  TABLE_SCHEMA,
-  TABLE_NAME,
-  ID_COLUMN
-}).subscribe({
-  next: (resp: any) => alert(resp.message),
-  error: (err) => alert('Error: ' + (err.error?.error || err.message))
-});
+  // Genera los valores para INSERT
+  const { INSERT_COLUMNS, INSERT_VALUES, INPUTS } = this.generateInsertParts(this.selectedFields);
+
+  this.http.post('http://localhost:3000/api/clonar-modulo', {
+    nombreModulo,
+    COLUMNS,
+    DATABASE,
+    TABLE_SCHEMA,
+    TABLE_NAME,
+    ID_COLUMN,
+    INSERT_COLUMNS,
+    INSERT_VALUES,
+    INPUTS
+  }).subscribe({
+    next: (resp: any) => alert(resp.message),
+    error: (err) => alert('Error: ' + (err.error?.error || err.message))
+  });
 }
 
 extractSqlParts(sqlScript: string) {
@@ -216,6 +222,17 @@ getPrimaryKey(table: string): string | null {
     fk.PARENT_TABLE === table && fk.FK_NAME && fk.PARENT_COLUMN
   );
   return pk ? pk.PARENT_COLUMN : null;
+}
+
+generateInsertParts(selectedFields: any[]): { INSERT_COLUMNS: string, INSERT_VALUES: string, INPUTS: string } {
+  if (!selectedFields || selectedFields.length === 0) {
+    return { INSERT_COLUMNS: '', INSERT_VALUES: '', INPUTS: '' };
+  }
+  const columns = selectedFields.map(f => f.COLUMN_NAME);
+  const INSERT_COLUMNS = columns.join(', ');
+  const INSERT_VALUES = columns.map(col => `@${col}`).join(', ');
+  const INPUTS = columns.map(col => `.input('${col}', mssql.VarChar, data.${col})`).join('\n        ');
+  return { INSERT_COLUMNS, INSERT_VALUES, INPUTS };
 }
 
 }
