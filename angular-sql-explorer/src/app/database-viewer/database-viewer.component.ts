@@ -204,6 +204,9 @@ FROM
     );
     const UPDATE_SET = this.generateUpdateSet(this.selectedFields, ID_COLUMN);
 
+    // Genera los campos de la interfaz
+    const INTERFACE_FIELDS = this.generateInterfaceFields(this.selectedFields);
+
     // Validación: debe haber al menos un campo distinto de la PK
     const camposSinPK = this.selectedFields.filter(f => f.COLUMN_NAME !== ID_COLUMN);
     if (!INSERT_COLUMNS || !INSERT_VALUES || !UPDATE_SET || camposSinPK.length === 0) {
@@ -223,6 +226,7 @@ FROM
         INSERT_VALUES,
         UPDATE_SET,
         INPUTS,
+        INTERFACE_FIELDS,
       })
       .subscribe({
         next: (resp: any) => alert(resp.message),
@@ -287,5 +291,35 @@ FROM
       .filter((f) => f.COLUMN_NAME !== idColumn)
       .map((f) => `${f.COLUMN_NAME} = @${f.COLUMN_NAME}`)
       .join(',\n              ');
+  }
+
+  mapSqlTypeToTs(type: string): string {
+    switch (type.toLowerCase()) {
+      case 'int':
+      case 'smallint':
+      case 'tinyint':
+      case 'bigint':
+      case 'decimal':
+      case 'numeric':
+      case 'float':
+      case 'real':
+        return 'number';
+      case 'bit':
+        return 'boolean';
+      case 'date':
+      case 'datetime':
+      case 'datetime2':
+      case 'smalldatetime':
+      case 'time':
+        return 'string'; // o 'Date' si prefieres
+      default:
+        return 'string';
+    }
+  }
+
+  generateInterfaceFields(selectedFields: any[]): string {
+    return selectedFields
+      .map(f => `${f.COLUMN_NAME}: ${this.mapSqlTypeToTs(f.DATA_TYPE)};`)
+      .join('\n  ');
   }
 }
