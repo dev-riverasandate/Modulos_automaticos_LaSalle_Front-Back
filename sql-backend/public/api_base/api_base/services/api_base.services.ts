@@ -107,24 +107,24 @@ async update(id: number, data: Omit<NivelCampus, '[ID_COLUMN]'>): Promise<void> 
     });
 }
 
-  async delete(id: number): Promise<void> {
-    const connectionMSSQL = new mssql.ConnectionPool(dbSettingsMMSQL);
+async delete(id: number): Promise<void> {
+  const connectionMSSQL = new mssql.ConnectionPool(dbSettingsMMSQL);
 
-    await connectionMSSQL.connect()
-      .then(pool => {
-        return pool.request()
-          .input('ID', mssql.Int, id)
-          .query(`
-            DELETE FROM [INTEGRACION].[academico].[aca_niveles_campus]
-            WHERE aca_nic_id = @ID
-          `);
-      })
-      .catch(err => {
-        console.log("ERROR:", err);
-        throw err;
-      })
-      .finally(() => {
-        connectionMSSQL.close();
-      });
-  }
+  await connectionMSSQL.connect()
+    .then(pool => {
+      return pool.request()
+        .input('ID', mssql.Int, id)
+        .query(`
+          DELETE FROM [[DATABASE]].[[TABLE_SCHEMA]].[[TABLE_NAME]]
+          WHERE [ID_COLUMN] = @ID
+        `);
+    })
+    .catch(err => {
+      console.log("ERROR:", err);
+      throw err;
+    })
+    .finally(() => {
+      connectionMSSQL.close();
+    });
+}
 }
