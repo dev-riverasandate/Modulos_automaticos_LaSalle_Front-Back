@@ -84,34 +84,28 @@ export default class ApiBaseService {
 }
 
 
-  async update(id: number, data: Omit<NivelCampus, 'aca_nic_id'>): Promise<void> {
-    const connectionMSSQL = new mssql.ConnectionPool(dbSettingsMMSQL);
+async update(id: number, data: Omit<NivelCampus, '[ID_COLUMN]'>): Promise<void> {
+  const connectionMSSQL = new mssql.ConnectionPool(dbSettingsMMSQL);
 
-    await connectionMSSQL.connect()
-      .then(pool => {
-        return pool.request()
-          .input('ID', mssql.Int, id)
-          .input('aca_nic_id_nivel', mssql.Int, data.aca_nic_id_nivel)
-          .input('aca_nic_id_campus', mssql.Int, data.aca_nic_id_campus)
-          .input('aca_nic_desc_nivel', mssql.VarChar, data.aca_nic_desc_nivel)
-          .input('aca_nic_id_nivel_si', mssql.Int, data.aca_nic_id_nivel_si)
-          .query(`
-            UPDATE [INTEGRACION].[academico].[aca_niveles_campus]
-            SET aca_nic_id_nivel = @aca_nic_id_nivel,
-                aca_nic_id_campus = @aca_nic_id_campus,
-                aca_nic_desc_nivel = @aca_nic_desc_nivel,
-                aca_nic_id_nivel_si = @aca_nic_id_nivel_si
-            WHERE aca_nic_id = @ID
-          `);
-      })
-      .catch(err => {
-        console.log("ERROR:", err);
-        throw err;
-      })
-      .finally(() => {
-        connectionMSSQL.close();
-      });
-  }
+  await connectionMSSQL.connect()
+    .then(pool => {
+      return pool.request()
+        .input('ID', mssql.Int, id)
+        [INPUTS]
+        .query(`
+          UPDATE [[DATABASE]].[[TABLE_SCHEMA]].[[TABLE_NAME]]
+          SET [UPDATE_SET]
+          WHERE [ID_COLUMN] = @ID
+        `);
+    })
+    .catch(err => {
+      console.log("ERROR:", err);
+      throw err;
+    })
+    .finally(() => {
+      connectionMSSQL.close();
+    });
+}
 
   async delete(id: number): Promise<void> {
     const connectionMSSQL = new mssql.ConnectionPool(dbSettingsMMSQL);

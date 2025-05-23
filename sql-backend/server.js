@@ -121,7 +121,7 @@ function pascalCase(str) {
   return str.replace(/(^|_)(\w)/g, (_, __, c) => c.toUpperCase());
 }
 
-async function cloneAndRenameModule(baseDir, destDir, nuevoModulo, COLUMNS, DATABASE, TABLE_SCHEMA, TABLE_NAME, ID_COLUMN, INSERT_COLUMNS, INSERT_VALUES, INPUTS) {
+async function cloneAndRenameModule(baseDir, destDir, nuevoModulo, COLUMNS, DATABASE, TABLE_SCHEMA, TABLE_NAME, ID_COLUMN, INSERT_COLUMNS, INSERT_VALUES, UPDATE_SET, INPUTS) {
   const nuevoModuloPascal = pascalCase(nuevoModulo);
   async function copyDir(src, dest) {
     await fsp.mkdir(dest, { recursive: true });
@@ -147,6 +147,7 @@ async function cloneAndRenameModule(baseDir, destDir, nuevoModulo, COLUMNS, DATA
           .replace(/\[ID_COLUMN\]/g, ID_COLUMN) // Ahora sí existe
           .replace(/\[INSERT_COLUMNS\]/g, INSERT_COLUMNS)
           .replace(/\[INSERT_VALUES\]/g, INSERT_VALUES)
+          .replace(/\[UPDATE_SET\]/g, UPDATE_SET)
           .replace(/\[INPUTS\]/g, INPUTS);
         await fsp.writeFile(destPath, content, 'utf8');
       }
@@ -156,7 +157,7 @@ async function cloneAndRenameModule(baseDir, destDir, nuevoModulo, COLUMNS, DATA
 }
 
 app.post('/api/clonar-modulo', async (req, res) => {
-  const { nombreModulo, COLUMNS, DATABASE, TABLE_SCHEMA, TABLE_NAME, ID_COLUMN, INSERT_COLUMNS, INSERT_VALUES, INPUTS } = req.body;
+  const { nombreModulo, COLUMNS, DATABASE, TABLE_SCHEMA, TABLE_NAME, ID_COLUMN, INSERT_COLUMNS, INSERT_VALUES, UPDATE_SET, INPUTS } = req.body;
   if (!nombreModulo) {
     return res.status(400).json({ error: 'Falta el nombre del módulo' });
   }
@@ -175,6 +176,7 @@ app.post('/api/clonar-modulo', async (req, res) => {
       ID_COLUMN,
       INSERT_COLUMNS, 
       INSERT_VALUES, 
+      UPDATE_SET,      // <-- AGREGA ESTE PARÁMETRO
       INPUTS
     );
     res.json({ success: true, message: `Módulo ${nombreModulo} creado en api_destino.` });
