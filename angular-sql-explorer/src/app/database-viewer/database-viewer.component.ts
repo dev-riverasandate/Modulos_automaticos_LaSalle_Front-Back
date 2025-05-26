@@ -249,10 +249,11 @@ export class DatabaseViewerComponent implements OnInit {
     }
 
     // Genera los valores para INSERT
-    const { INSERT_COLUMNS, INSERT_VALUES, INPUTS } = this.generateInsertParts(
-      this.selectedFields
-    );
-    const UPDATE_SET = this.generateUpdateSet(this.selectedFields, ID_COLUMN);
+const { INSERT_COLUMNS, INSERT_VALUES, INPUTS } = this.generateInsertParts(
+  this.selectedFields,
+  ID_COLUMN
+);
+const UPDATE_SET = this.generateUpdateSet(this.selectedFields, ID_COLUMN);
 
     // Genera los campos de la interfaz
     const INTERFACE_FIELDS = this.generateInterfaceFields(this.selectedFields);
@@ -318,7 +319,7 @@ export class DatabaseViewerComponent implements OnInit {
     return pk ? pk.PARENT_COLUMN : null;
   }
 
-  generateInsertParts(selectedFields: any[]): {
+  generateInsertParts(selectedFields: any[], idColumn: string): {
     INSERT_COLUMNS: string;
     INSERT_VALUES: string;
     INPUTS: string;
@@ -326,19 +327,22 @@ export class DatabaseViewerComponent implements OnInit {
     if (!selectedFields || selectedFields.length === 0) {
       return { INSERT_COLUMNS: '', INSERT_VALUES: '', INPUTS: '' };
     }
-    const columns = selectedFields.map((f) => f.COLUMN_NAME);
+    // Normaliza el nombre de la PK
+    const pkSimple = idColumn.split('.').pop()?.replace(/[\[\]]/g, '') ?? idColumn;
+    const camposSinPK = selectedFields.filter(f => f.COLUMN_NAME !== pkSimple);
+    const columns = camposSinPK.map((f) => f.COLUMN_NAME);
     const INSERT_COLUMNS = columns.join(', ');
     const INSERT_VALUES = columns.map((col) => `@${col}`).join(', ');
-    const INPUTS = columns
-      .map((col) => `.input('${col}', mssql.VarChar, data.${col})`)
+    const INPUTS = camposSinPK
+      .map((f) => `.input('${f.COLUMN_NAME}', mssql.VarChar, data.${f.COLUMN_NAME})`)
       .join('\n        ');
     return { INSERT_COLUMNS, INSERT_VALUES, INPUTS };
   }
 
   generateUpdateSet(selectedFields: any[], idColumn: string): string {
-    // Excluye la columna ID de los campos a actualizar
+    const pkSimple = idColumn.split('.').pop()?.replace(/[\[\]]/g, '') ?? idColumn;
     return selectedFields
-      .filter((f) => f.COLUMN_NAME !== idColumn)
+      .filter((f) => f.COLUMN_NAME !== pkSimple)
       .map((f) => `${f.COLUMN_NAME} = @${f.COLUMN_NAME}`)
       .join(',\n              ');
   }
@@ -414,5 +418,37 @@ filteredTables() {
   return this.tables.filter(
     t => t.TABLE_SCHEMA && t.TABLE_SCHEMA.toLowerCase().includes(filter)
   );
+}
+
+generateSqlFragments(selectedFields: any[], primaryKey: string) {
+  // Excluye la PK para INSERT y UPDATE SET
+  const fieldsWithoutPK = selectedFields.filter(f => f.COLUMN_NAME !== primaryKey);
+
+  // .input() para create y update (sin PK)
+  const INPUTS = fieldsWithoutPK.map(f =>
+    `.input('${f.COLUMN_NAME}', mssql.VarChar, data.${f.COLUMN_NAME})`
+  ).join('\n        ');
+
+  // Columnas y valores para INSERT (sin PK)
+  const INSERT_COLUMNS = fieldsWithoutPK.map(f => f.COLUMN_NAME).join(', ');
+  const INSERT_VALUES = fieldsWithoutPK.map(f => `@${f.COLUMN_NAME}`).join(', ');
+
+  // SET para UPDATE (sin PK)
+  const UPDATE_SET = fieldsWithoutPK.map(f => `${f.COLUMN_NAME} = @${f.COLUMN_NAME}`).join(',\n              ');
+
+  // .input() para el WHERE del update (solo PK)
+  const INPUT_ID = `.input('ID', mssql.Int, id)`;
+
+  // WHERE para update
+  const WHERE = `${primaryKey} = @ID`;
+
+  return {
+    INPUTS,
+    INSERT_COLUMNS,
+    INSERT_VALUES,
+    UPDATE_SET,
+    INPUT_ID,
+    WHERE
+  };
 }
 }
