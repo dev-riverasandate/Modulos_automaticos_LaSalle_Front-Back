@@ -28,7 +28,7 @@ getColumns(databaseName: string, tableName: string) {
 
 //Inicio del metodod para mostrar las llaves foraneas
 getForeignKeys(database: string) {
-  return this.http.get<any[]>(`${this.apiUrl}/databases/${database}/foreign-keys`);
+  return this.http.get<any[]>(`${this.apiUrl}/${database}/foreign-keys`);
 }
 //Fin del metodod para mostrar las llaves foraneas
 

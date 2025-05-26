@@ -39,10 +39,10 @@ app.get('/api/databases/:dbName/tables', async (req, res) => {
   try {
     await sql.connect(dbConfig);
     const result = await sql.query`
-      SELECT TABLE_NAME 
-      FROM INFORMATION_SCHEMA.TABLES 
+      SELECT TABLE_SCHEMA, TABLE_NAME
+      FROM INFORMATION_SCHEMA.TABLES
       WHERE TABLE_TYPE = 'BASE TABLE'
-      ORDER BY TABLE_NAME
+      ORDER BY TABLE_SCHEMA, TABLE_NAME
     `;
     res.json(result.recordset);
   } catch (err) {
@@ -184,6 +184,30 @@ app.post('/api/clonar-modulo', async (req, res) => {
     res.json({ success: true, message: `Módulo ${nombreModulo} creado en api_destino.` });
   } catch (err) {
     console.error('Error al clonar módulo:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- ENDPOINT PARA EJECUTAR SQL DINÁMICO (SOLO SELECT) ---
+
+app.post('/api/ejecutar-sql', async (req, res) => {
+  const { sql: sqlQuery, database } = req.body;
+  if (!sqlQuery) return res.status(400).json({ error: 'No se recibió SQL' });
+
+  // Solo permitir SELECT por seguridad
+  if (!/^select\s/i.test(sqlQuery.trim())) {
+    return res.status(400).json({ error: 'Solo se permiten consultas SELECT' });
+  }
+
+  // Usa la base seleccionada si viene en el body, si no usa la default
+  const dbConfig = { ...config, database: database || config.database };
+
+  try {
+    await sql.connect(dbConfig);
+    const result = await sql.query(sqlQuery);
+    res.json(result.recordset || []);
+  } catch (err) {
+    console.error('Error al ejecutar SQL:', err);
     res.status(500).json({ error: err.message });
   }
 });

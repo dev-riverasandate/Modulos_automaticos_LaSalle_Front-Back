@@ -4,19 +4,26 @@ import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { DatabaseService } from '../services/database.service';
 import { DragDropModule } from '@angular/cdk/drag-drop';
-import { CdkDragDrop, transferArrayItem } from '@angular/cdk/drag-drop';
+import { CdkDragDrop, transferArrayItem, moveItemInArray } from '@angular/cdk/drag-drop';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { HttpClient } from '@angular/common/http';
+import { FormsModule } from '@angular/forms';
+import { MatDialog } from '@angular/material/dialog';
+import { QueryResultDialogComponent } from '../component/query-result-dialog.component';
+import { MatToolbarModule } from '@angular/material/toolbar';
+
 
 @Component({
   selector: 'app-database-viewer',
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     MatListModule,
     MatIconModule,
     MatCheckboxModule,
     DragDropModule,
+    MatToolbarModule
   ],
   templateUrl: './database-viewer.component.html',
   styleUrls: ['./database-viewer.component.scss'],
@@ -27,14 +34,23 @@ export class DatabaseViewerComponent implements OnInit {
   selectedDatabase: string | null = null;
   loading = false;
   error: string | null = null;
-  selectedTables: string[] = [];
+  selectedTables: any[] = [];
   tableColumns: { [table: string]: any[] } = {};
   selectedFields: any[] = [];
   foreignKeys: any[] = [];
 
+  editingSql = false;
+  manualSql = '';
+
+  queryResult: any[] = [];
+  queryColumns: string[] = [];
+
+  tableFilter: string = '';
+
   constructor(
     private databaseService: DatabaseService,
-    private http: HttpClient
+    private http: HttpClient,
+    private dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
@@ -55,7 +71,7 @@ export class DatabaseViewerComponent implements OnInit {
       },
     });
   }
-  //Inicio del componente para manejar la seleccion y mostrar tablas
+
   onSelectDatabase(db: any): void {
     this.selectedDatabase = db.name;
     this.tables = [];
@@ -83,59 +99,61 @@ export class DatabaseViewerComponent implements OnInit {
       },
     });
   }
-  //Fin del componente para manejar la seleccion y mostrar tablas
 
-  //Inicio del componente para manejar la seleccion y mostrar columnas
-  onToggleTableSelection(table: any): void {
-    const idx = this.selectedTables.indexOf(table.TABLE_NAME || table.name);
-    if (idx > -1) {
-      this.selectedTables.splice(idx, 1);
-      delete this.tableColumns[table.TABLE_NAME || table.name];
+  onToggleTableSelection(table: any) {
+    const idx = this.selectedTables.findIndex(t => t.TABLE_NAME === table.TABLE_NAME);
+
+    if (idx === -1) {
+      this.selectedTables.push(table);
+      this.databaseService.getColumns(this.selectedDatabase!, table.TABLE_NAME).subscribe({
+        next: (cols) => {
+          this.tableColumns[table.TABLE_NAME] = cols;
+        },
+        error: () => {
+          this.tableColumns[table.TABLE_NAME] = [];
+        }
+      });
     } else {
-      this.selectedTables.push(table.TABLE_NAME || table.name);
-      this.loadColumns(this.selectedDatabase!, table.TABLE_NAME || table.name);
+      this.selectedTables.splice(idx, 1);
+      delete this.tableColumns[table.TABLE_NAME];
+      this.selectedFields = this.selectedFields.filter(f => f.TABLE_NAME !== table.TABLE_NAME);
     }
   }
 
-  loadColumns(database: string, table: string): void {
-    this.databaseService.getColumns(database, table).subscribe({
-      next: (columns) => {
-        // Si columns ya trae TABLE_SCHEMA y TABLE_NAME, no necesitas esto:
-        // Si no, asígnalos aquí (ejemplo con esquema 'dbo'):
-        this.tableColumns[table] = columns.map((col) => ({
-          ...col,
-          TABLE_NAME: table,
-          TABLE_SCHEMA: col.TABLE_SCHEMA || 'dbo',
-        }));
-      },
-      error: () => {
-        this.tableColumns[table] = [];
-      },
-    });
+  isTableSelected(table: any): boolean {
+    return this.selectedTables.some(t => t.TABLE_NAME === table.TABLE_NAME);
   }
 
-  // Drag and drop handler
+  // drop(event: CdkDragDrop<any[]>) {
+  //   if (event.previousContainer !== event.container) {
+  //     transferArrayItem(
+  //       event.previousContainer.data,
+  //       event.container.data,
+  //       event.previousIndex,
+  //       event.currentIndex
+  //     );
+  //   }
+  // }
   drop(event: CdkDragDrop<any[]>) {
-    if (event.previousContainer !== event.container) {
-      transferArrayItem(
-        event.previousContainer.data,
-        event.container.data,
-        event.previousIndex,
-        event.currentIndex
-      );
-    }
+  if (event.previousContainer === event.container) {
+    // Reordenamiento manual dentro de la lista de seleccionados
+    moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
+  } else {
+    // Arrastrando desde otra lista: agrega al final (abajo)
+    const [moved] = event.previousContainer.data.splice(event.previousIndex, 1);
+    event.container.data.push(moved);
   }
-  //Fin del componente para manejar la seleccion y mostrar columnas
+}
 
   get connectedDropLists(): string[] {
-    return this.selectedTables.map((t) => 'fieldsList_' + t);
+    return this.selectedTables.map((t) => 'fieldsList_' + t.TABLE_NAME);
   }
 
   get generatedQuery(): string {
-    if (!this.selectedFields.length)
-      return '-- Selecciona campos para generar la consulta --';
+    if (this.manualSql && !this.editingSql) {
+      return this.manualSql;
+    }
 
-    // Agrupa campos por tabla
     const fieldsByTable: { [key: string]: any[] } = {};
     this.selectedFields.forEach((field) => {
       const schema = field.TABLE_SCHEMA || '';
@@ -145,49 +163,81 @@ export class DatabaseViewerComponent implements OnInit {
       fieldsByTable[key].push(field);
     });
 
-    // SELECT parte: solo los nombres de columna con esquema
-    // const selectFields = this.selectedFields
-    // .map(field => `${field.TABLE_SCHEMA}.[${field.COLUMN_NAME}]`)
-    // .join(',\n    ');
+    const columnCount: { [col: string]: number } = {};
+    this.selectedFields.forEach(f => {
+      columnCount[f.COLUMN_NAME] = (columnCount[f.COLUMN_NAME] || 0) + 1;
+    });
 
-    // SELECT parte: solo los nombres de columna sin esquema
-    const selectFields = this.selectedFields
-      .map((field) => `${field.COLUMN_NAME}`)
-      .join(',\n    ');
+    const selectFields = this.selectedFields.map(field => {
+      const schema = field.TABLE_SCHEMA || '';
+      const table = field.TABLE_NAME || '';
+      const col = field.COLUMN_NAME;
+      if (columnCount[col] > 1) {
+        return `[${schema}].[${table}].[${col}] AS [${table}_${col}]`;
+      }
+      return `[${schema}].[${table}].[${col}]`;
+    }).join(',\n    ');
 
-    // FROM parte: si hay una tabla, solo esa; si hay varias, CROSS JOIN
     const tables = Object.keys(fieldsByTable);
-    let fromClause = '';
+    if (tables.length === 0) {
+      return '-- Selecciona campos para generar la consulta --';
+    }
     if (tables.length === 1) {
       const [schema, table] = tables[0].split('.');
-      fromClause = `[${this.selectedDatabase}].[${schema}].[${table}]`;
-    } else if (tables.length > 1) {
-      fromClause = tables
-        .map((tbl) => {
-          const [schema, table] = tbl.split('.');
-          return `[${this.selectedDatabase}].[${schema}].[${table}]`;
-        })
-        .join(',\n    ');
+      return `SELECT\n    ${selectFields}\nFROM [${this.selectedDatabase}].[${schema}].[${table}];`;
     }
 
-    // ORDER BY por la primera columna seleccionada
-    // let orderByClause = '';
-    // if (this.selectedFields.length > 0) {
-    //   orderByClause = `\nORDER BY [${this.selectedFields[0].COLUMN_NAME}]`;
-    // }
+    let fromClause = '';
+    let joins: string[] = [];
+    let usedTables = [tables[0]];
+    fromClause = `[${this.selectedDatabase}].${tables[0].split('.').map(x => `[${x}]`).join('.')}`;
 
-    // Script final
-    return `SELECT
-    ${selectFields}
-FROM
-    ${fromClause}
-;`;
+    for (let i = 1; i < tables.length; i++) {
+      const [schema, table] = tables[i].split('.');
+      let found = false;
+      for (const used of usedTables) {
+        const [usedSchema, usedTable] = used.split('.');
+        const rel = this.foreignKeys.find(fk =>
+          (fk.PARENT_TABLE === usedTable && fk.REF_TABLE === table) ||
+          (fk.PARENT_TABLE === table && fk.REF_TABLE === usedTable)
+        );
+        if (rel) {
+          if (rel.PARENT_TABLE === usedTable) {
+            joins.push(`INNER JOIN [${this.selectedDatabase}].[${schema}].[${table}] ON [${usedTable}].[${rel.PARENT_COLUMN}] = [${table}].[${rel.REF_COLUMN}]`);
+          } else {
+            joins.push(`INNER JOIN [${this.selectedDatabase}].[${usedSchema}].[${usedTable}] ON [${table}].[${rel.PARENT_COLUMN}] = [${usedTable}].[${rel.REF_COLUMN}]`);
+          }
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        joins.push(`CROSS JOIN [${this.selectedDatabase}].[${schema}].[${table}]`);
+      }
+      usedTables.push(tables[i]);
+    }
+
+    return `SELECT\n    ${selectFields}\nFROM ${fromClause}\n    ${joins.join('\n    ')};`;
+  }
+
+  startEditingSql() {
+    this.manualSql = this.generatedQuery;
+    this.editingSql = true;
+  }
+
+  saveManualSql() {
+    this.editingSql = false;
+  }
+
+  cancelEditingSql() {
+    this.editingSql = false;
+    this.manualSql = '';
   }
 
   onMenuAction1() {
     const nombreModulo = prompt('Nombre del nuevo módulo (ej: md_escolar):');
     if (!nombreModulo) return;
-    const sqlScript = this.generatedQuery;
+    const sqlScript = this.manualSql || this.generatedQuery;
     const { COLUMNS, DATABASE, TABLE_SCHEMA, TABLE_NAME, ID_COLUMN } =
       this.extractSqlParts(sqlScript);
 
@@ -322,4 +372,47 @@ FROM
       .map(f => `${f.COLUMN_NAME}: ${this.mapSqlTypeToTs(f.DATA_TYPE)};`)
       .join('\n  ');
   }
+
+  runQuery() {
+  const duplicates = this.checkDuplicateColumns();
+  if (duplicates.length > 0) {
+    alert(
+      'Advertencia: Hay columnas duplicadas seleccionadas (' +
+      duplicates.join(', ') +
+      '). Considera usar alias para evitar errores en el SQL.'
+    );
+    // Si quieres bloquear la ejecución, agrega: return;
+  }
+
+  const sql = this.manualSql || this.generatedQuery;
+  this.http.post<any[]>('http://localhost:3000/api/ejecutar-sql', { sql }).subscribe({
+    next: (data) => {
+      const columns = data.length ? Object.keys(data[0]) : [];
+      this.dialog.open(QueryResultDialogComponent, {
+        width: '90vw',
+        maxWidth: '100vw',
+        data: { columns, rows: data }
+      });
+    },
+    error: (err) => {
+      alert('SQL inválido o error en la consulta:\n' + (err.error?.error || err.message));
+    }
+  });
+}
+
+checkDuplicateColumns(): string[] {
+  const colCount: { [key: string]: number } = {};
+  this.selectedFields.forEach(f => {
+    colCount[f.COLUMN_NAME] = (colCount[f.COLUMN_NAME] || 0) + 1;
+  });
+  return Object.keys(colCount).filter(col => colCount[col] > 1);
+}
+
+filteredTables() {
+  if (!this.tableFilter) return this.tables;
+  const filter = this.tableFilter.toLowerCase();
+  return this.tables.filter(
+    t => t.TABLE_SCHEMA && t.TABLE_SCHEMA.toLowerCase().includes(filter)
+  );
+}
 }
