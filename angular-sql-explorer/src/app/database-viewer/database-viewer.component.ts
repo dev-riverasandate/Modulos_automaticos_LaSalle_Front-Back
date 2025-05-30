@@ -47,6 +47,8 @@ export class DatabaseViewerComponent implements OnInit {
 
   tableFilter: string = '';
 
+  nombreModuloFrontend = '';
+
   constructor(
     private databaseService: DatabaseService,
     private http: HttpClient,
@@ -333,10 +335,43 @@ const UPDATE_SET = this.generateUpdateSet(this.selectedFields, ID_COLUMN);
     const columns = camposSinPK.map((f) => f.COLUMN_NAME);
     const INSERT_COLUMNS = columns.join(', ');
     const INSERT_VALUES = columns.map((col) => `@${col}`).join(', ');
+
+    // --- Cambia esta parte para mapear el tipo SQL a mssql ---
     const INPUTS = camposSinPK
-      .map((f) => `.input('${f.COLUMN_NAME}', mssql.VarChar, data.${f.COLUMN_NAME})`)
+      .map((f) => `.input('${f.COLUMN_NAME}', ${this.mapSqlTypeToMssql(f.DATA_TYPE)}, data.${f.COLUMN_NAME})`)
       .join('\n        ');
+    // --------------------------------------------------------
+
     return { INSERT_COLUMNS, INSERT_VALUES, INPUTS };
+  }
+
+  // Agrega esta función auxiliar en la misma clase:
+  mapSqlTypeToMssql(sqlType: string): string {
+    switch (sqlType.toLowerCase()) {
+      case 'int':
+      case 'bigint':
+      case 'smallint':
+      case 'tinyint':
+        return 'mssql.Int';
+      case 'decimal':
+      case 'numeric':
+      case 'float':
+      case 'real':
+      case 'money':
+      case 'smallmoney':
+        return 'mssql.Float';
+      case 'bit':
+        return 'mssql.Bit';
+      case 'date':
+      case 'datetime':
+      case 'datetime2':
+      case 'smalldatetime':
+      case 'time':
+      case 'timestamp':
+        return 'mssql.DateTime';
+      default:
+        return 'mssql.VarChar';
+    }
   }
 
   generateUpdateSet(selectedFields: any[], idColumn: string): string {
@@ -365,7 +400,7 @@ const UPDATE_SET = this.generateUpdateSet(this.selectedFields, ID_COLUMN);
       case 'datetime2':
       case 'smalldatetime':
       case 'time':
-        return 'string'; // o 'Date' si prefieres
+        return 'string'; 
       default:
         return 'string';
     }
@@ -450,5 +485,42 @@ generateSqlFragments(selectedFields: any[], primaryKey: string) {
     INPUT_ID,
     WHERE
   };
+}
+
+// --- GENERAR FRONTEND DINÁMICO ---
+generarFrontendNuevo() {
+  const nombreModuloFrontend = prompt('Nombre del nuevo frontend (ej: md_maestros):');
+  if (!nombreModuloFrontend) {
+    alert('Debes escribir el nombre del frontend');
+    return;
+  }
+
+  // Extrae la PK real de la tabla seleccionada
+  const sqlScript = this.manualSql || this.generatedQuery;
+  const { ID_COLUMN } = this.extractSqlParts(sqlScript);
+
+    // --- Normaliza aquí solo para el envío ---
+  const pkSimple = ID_COLUMN
+    ? ID_COLUMN.split('.').pop()?.replace(/[\[\]]/g, '') ?? ID_COLUMN
+    : '';
+
+  // Genera los campos de la interfaz a partir de los campos seleccionados
+  const INTERFACE_FIELDS = this.generateInterfaceFields(this.selectedFields);
+
+  this.http.post('http://localhost:3000/api/generar-frontend', {
+    nomBackend: nombreModuloFrontend,
+    Modulocamel: this.toPascalCase(nombreModuloFrontend),
+    MODULO_MAYUS: nombreModuloFrontend.replace(/-/g, '_').toUpperCase(),
+    PRIMARY_KEY: pkSimple,
+    BACKEND_URL: `/api/${nombreModuloFrontend}`,
+    INTERFACE_FIELDS
+  }).subscribe({
+    next: resp => alert((resp as any).message),
+    error: err => alert('Error: ' + (err.error?.error || err.message))
+  });
+}
+
+toPascalCase(str: string): string {
+  return str.replace(/(^\w|-\w)/g, m => m.replace(/-/, '').toUpperCase());
 }
 }

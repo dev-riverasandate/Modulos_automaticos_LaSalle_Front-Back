@@ -212,6 +212,62 @@ app.post('/api/ejecutar-sql', async (req, res) => {
   }
 });
 
+
+// --- CLONADOR DE FRONTEND ---
+async function cloneAndRenameFrontend(baseDir, destDir, replacements) {
+  async function copyDir(src, dest) {
+    await fsp.mkdir(dest, { recursive: true });
+    const entries = await fsp.readdir(src, { withFileTypes: true });
+    for (let entry of entries) {
+      const srcPath = path.join(src, entry.name);
+      let destName = entry.name;
+      for (const [marker, value] of Object.entries(replacements)) {
+        destName = destName.split(marker).join(value);
+      }
+      const destPath = path.join(dest, destName);
+      if (entry.isDirectory()) {
+        await copyDir(srcPath, destPath);
+      } else {
+        let content = await fsp.readFile(srcPath, 'utf8');
+        for (const [marker, value] of Object.entries(replacements)) {
+          content = content.split(marker).join(value);
+        }
+        await fsp.writeFile(destPath, content, 'utf8');
+      }
+    }
+  }
+  await copyDir(baseDir, destDir);
+}
+
+app.post('/api/generar-frontend', async (req, res) => {
+  const {
+    nomBackend, Modulocamel, MODULO_MAYUS,
+    PRIMARY_KEY, BACKEND_URL, INTERFACE_FIELDS
+  } = req.body;
+  if (!nomBackend) {
+    return res.status(400).json({ error: 'Falta el nombre del frontend' });
+  }
+  const baseDir = path.join(__dirname, 'public', 'frontend-base', 'md-base');
+  const destDir = path.join(__dirname, 'public', 'frontend-destino', nomBackend);
+
+  const replacements = {
+    '[nom-backend]': nomBackend,
+    '[Modulocamel]': Modulocamel,
+    '[MODULO_MAYUS]': MODULO_MAYUS,
+    '[PRIMARY_KEY]': PRIMARY_KEY,
+    '[BACKEND_URL]': BACKEND_URL,
+    '[INTERFACE_FIELDS]': INTERFACE_FIELDS
+  };
+
+  try {
+    await cloneAndRenameFrontend(baseDir, destDir, replacements);
+    res.json({ success: true, message: `Frontend ${nomBackend} creado en frontend-destino.` });
+  } catch (err) {
+    console.error('Error al clonar frontend:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.listen(3000, () => {
   console.log('Backend corriendo en http://localhost:3000');
 });
