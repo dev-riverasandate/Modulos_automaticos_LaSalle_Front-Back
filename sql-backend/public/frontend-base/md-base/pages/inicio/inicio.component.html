@@ -1,11 +1,11 @@
 <div class="bg-blue-500 text-white p-6 rounded shadow-lg mb-4">
   <h1 class="text-2xl font-bold">CRUD Base Dinámico</h1>
-  <button class="mt-4 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded" (click)="abrirNuevo()">Nuevo</button>
+  <a class="mt-4 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded inline-block" [routerLink]="['agregar']">Nuevo</a>
 </div>
 
 <div class="overflow-x-auto">
   <table class="min-w-full text-sm text-left text-gray-500 dark:text-gray-400">
-    <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+    <thead>
       <tr>
         <th *ngFor="let col of columnas">{{ col }}</th>
         <th>Acciones</th>
@@ -15,33 +15,12 @@
       <tr *ngFor="let item of items">
         <td *ngFor="let col of columnas">{{ item[col] }}</td>
         <td>
-          <button class="bg-yellow-400 hover:bg-yellow-500 text-white px-2 py-1 rounded mr-2" (click)="abrirEditar(item)">Editar</button>
-          <button class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded" (click)="eliminar(item[primaryKey])">Eliminar</button>
+          <a class="bg-yellow-400 hover:bg-yellow-500 text-white px-2 py-1 rounded mr-2"
+             [routerLink]="['editar', item[primaryKey]]">Editar</a>
+          <a class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded"
+             [routerLink]="['eliminar', item[primaryKey]]">Eliminar</a>
         </td>
       </tr>
     </tbody>
   </table>
-</div>
-
-<!-- Modal -->
-<div *ngIf="modalAbierto" class="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-  <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
-    <h2 class="text-xl font-bold mb-4">{{ editando ? 'Editar' : 'Nuevo' }} registro</h2>
-    <form (ngSubmit)="guardar()" #formRef="ngForm">
-      <div class="mb-4" *ngFor="let col of columnas">
-        <label class="block mb-1">{{ col }}</label>
-        <input
-          class="w-full border rounded px-3 py-2"
-          [(ngModel)]="form[col]"
-          [name]="col"
-          [required]="col !== primaryKey"
-          [readonly]="col === primaryKey && editando"
-        />
-      </div>
-      <div class="flex justify-end">
-        <button type="button" class="mr-2 px-4 py-2 bg-gray-300 rounded" (click)="cerrarModal()">Cancelar</button>
-        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">{{ editando ? 'Actualizar' : 'Crear' }}</button>
-      </div>
-    </form>
-  </div>
 </div>

@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router'; // <-- AGREGA ESTO
 import { [Modulocamel]Service } from '../../services/[nom-backend].service';
 import { [Modulocamel]Item } from '../../interfaces/[nom-backend].interface';
 
@@ -9,7 +10,7 @@ import { [Modulocamel]Item } from '../../interfaces/[nom-backend].interface';
   templateUrl: './inicio.component.html',
   styleUrls: ['./inicio.component.css', '../../base-styles.css'],
   standalone: true,
-  imports: [CommonModule, FormsModule]
+  imports: [CommonModule, FormsModule, RouterModule] // <-- AGREGA RouterModule AQUÍ
 })
 export class InicioComponent implements OnInit {
   items: [Modulocamel]Item[] = [];
