@@ -1,0 +1,26 @@
+<div class="bg-blue-500 text-white p-6 rounded shadow-lg mb-4">
+  <h1 class="text-2xl font-bold">CRUD Base Dinámico</h1>
+  <a class="mt-4 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded inline-block" [routerLink]="['agregar']">Nuevo</a>
+</div>
+
+<div class="overflow-x-auto">
+  <table class="min-w-full text-sm text-left text-gray-500 dark:text-gray-400">
+    <thead>
+      <tr>
+        <th *ngFor="let col of columnas">{{ col }}</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let item of items">
+        <td *ngFor="let col of columnas">{{ item[col] }}</td>
+        <td>
+          <a class="bg-yellow-400 hover:bg-yellow-500 text-white px-2 py-1 rounded mr-2"
+             [routerLink]="['editar', item[primaryKey]]">Editar</a>
+          <a class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded"
+             [routerLink]="['eliminar', item[primaryKey]]">Eliminar</a>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

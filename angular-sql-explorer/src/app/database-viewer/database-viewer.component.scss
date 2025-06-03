@@ -1,0 +1,68 @@
+.tables-columns, .selected-fields {
+  border: 1px solid #ccc;
+  min-height: 40px;
+  margin-bottom: 16px;
+  padding: 8px;
+  background: #fafafa;
+}
+.fields-list > div, .selected-fields > div {
+  margin: 4px 0;
+  padding: 4px 8px;
+  background: #e3f2fd;
+  border-radius: 4px;
+  cursor: move;
+}
+
+.three-columns {
+  display: flex;
+  gap: 16px;
+  height: 100vh; /* Ocupa toda la altura de la ventana */
+}
+
+.column {
+  flex: 1 1 0;
+  min-width: 200px;
+  max-width: 350px;
+  background: #fafafa;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 12px;
+  box-sizing: border-box;
+  margin-bottom: 8px;
+}
+
+/* Solo columnas 1 y 2 con scroll y altura completa */
+.column:nth-child(1),
+.column:nth-child(2) {
+  height: 100vh;
+  max-height: 100vh;
+  overflow-y: auto;
+}
+
+/* Opcional: columnas 3 y 4 más compactas */
+.column:nth-child(3),
+.column:nth-child(4) {
+  height: auto;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+
+.fields-list, .selected-fields {
+  min-height: 40px;
+  margin-bottom: 16px;
+  padding: 8px;
+  background: #e3f2fd;
+  border-radius: 4px;
+  border: 1px dashed #90caf9;
+}
+
+.fields-list-title {
+  font-weight: bold;
+  margin-top: 8px;
+  margin-bottom: 4px;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
