@@ -1,0 +1,13 @@
+<h2 class="mat-headline mb-4">Editar registro</h2>
+<form (ngSubmit)="guardar()" #formRef="ngForm" *ngIf="form">
+  <div *ngFor="let col of columnas" class="mb-3">
+    <mat-form-field appearance="fill" class="w-100">
+      <mat-label>{{ col }}</mat-label>
+      <input matInput [(ngModel)]="form[col]" [name]="col" required>
+    </mat-form-field>
+  </div>
+  <div class="d-flex justify-content-end">
+    <button mat-raised-button color="primary" type="submit" class="me-2">Guardar</button>
+    <button mat-raised-button color="warn" type="button" (click)="cancelar()">Cancelar</button>
+  </div>
+</form>

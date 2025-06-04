@@ -1,0 +1,19 @@
+<h2 mat-dialog-title>Resultados de la consulta</h2>
+<mat-dialog-content>
+  <div *ngIf="!data.columns.length">Sin resultados</div>
+  <table *ngIf="data.columns.length" style="width:100%;border-collapse:collapse;">
+    <thead>
+      <tr>
+        <th *ngFor="let col of data.columns" style="border-bottom:1px solid #ccc;text-align:left;padding:4px;">{{ col }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let row of data.rows">
+        <td *ngFor="let col of data.columns" style="border-bottom:1px solid #eee;padding:4px;">{{ row[col] }}</td>
+      </tr>
+    </tbody>
+  </table>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Cerrar</button>
+</mat-dialog-actions>

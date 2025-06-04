@@ -1,0 +1,13 @@
+<h2 class="fw-bold mb-4">Eliminar registro</h2>
+<div *ngIf="item">
+  <div *ngFor="let col of columnas" class="mb-2">
+    <p><strong>{{ col }}:</strong> {{ item[col] }}</p>
+  </div>
+  <div class="d-flex justify-content-end mt-4">
+    <button (click)="eliminar()" class="btn btn-danger me-2">Eliminar</button>
+    <button (click)="cancelar()" class="btn btn-secondary">Cancelar</button>
+  </div>
+</div>
+<div *ngIf="!item">
+  <p class="text-danger">No se encontró el registro.</p>
+</div>
