@@ -49,6 +49,8 @@ export class DatabaseViewerComponent implements OnInit {
 
   nombreModuloFrontend = '';
 
+  estilos: string = 'tailwind'; // Valor por defecto
+
   constructor(
     private databaseService: DatabaseService,
     private http: HttpClient,
@@ -522,5 +524,36 @@ generarFrontendNuevo() {
 
 toPascalCase(str: string): string {
   return str.replace(/(^\w|-\w)/g, m => m.replace(/-/, '').toUpperCase());
+}
+
+generarFrontend() {
+  if (!this.nombreModuloFrontend || !this.nombreModuloFrontend.trim()) {
+    alert('Debes escribir el nombre del frontend');
+    return;
+  }
+  // Extrae la PK real de la tabla seleccionada
+  const sqlScript = this.manualSql || this.generatedQuery;
+  const { ID_COLUMN } = this.extractSqlParts(sqlScript);
+
+  // Normaliza la PK
+  const pkSimple = ID_COLUMN
+    ? ID_COLUMN.split('.').pop()?.replace(/[\[\]]/g, '') ?? ID_COLUMN
+    : '';
+
+  // Genera los campos de la interfaz a partir de los campos seleccionados
+  const INTERFACE_FIELDS = this.generateInterfaceFields(this.selectedFields);
+
+  this.http.post('http://localhost:3000/api/generar-frontend', {
+  nomBackend: this.nombreModuloFrontend,
+  Modulocamel: this.toPascalCase(this.nombreModuloFrontend),
+  MODULO_MAYUS: this.nombreModuloFrontend.replace(/-/g, '_').toUpperCase(),
+  PRIMARY_KEY: pkSimple,
+  BACKEND_URL: `/api/${this.nombreModuloFrontend}`,
+  INTERFACE_FIELDS,
+  estilos: this.estilos // <-- DEBE IR AQUÍ
+}).subscribe({
+  next: resp => alert((resp as any).message),
+  error: err => alert('Error: ' + (err.error?.error || err.message))
+});
 }
 }

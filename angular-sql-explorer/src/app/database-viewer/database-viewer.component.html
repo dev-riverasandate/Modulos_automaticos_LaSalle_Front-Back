@@ -1,6 +1,29 @@
 <mat-toolbar color="primary" style="margin-bottom: 16px;">
   <span style="font-weight: bold;">Modulos La Salle</span>
   <span class="spacer"></span>
+  <!-- Selector de framework de estilos -->
+  <div class="mb-3" style="margin-right: 16px;">
+    <label class="form-label fw-bold" style="margin-right: 8px;">Estilos:</label>
+    <input type="radio" id="tailwind" name="estilos" [(ngModel)]="estilos" value="tailwind" checked>
+    <label for="tailwind" style="margin-right: 8px;">Tailwind</label>
+    <input type="radio" id="bootstrap" name="estilos" [(ngModel)]="estilos" value="bootstrap">
+    <label for="bootstrap" style="margin-right: 8px;">Bootstrap</label>
+    <input type="radio" id="material" name="estilos" [(ngModel)]="estilos" value="material">
+    <label for="material" style="margin-right: 16px;">Material</label>
+  </div>
+  <!-- Input para el nombre del frontend -->
+  <div class="mb-3" style="margin-right: 16px;">
+    <label class="form-label fw-bold" for="nombreModuloFrontend" style="margin-right: 8px;">Nombre del frontend:</label>
+    <input
+      id="nombreModuloFrontend"
+      type="text"
+      class="form-control"
+      [(ngModel)]="nombreModuloFrontend"
+      placeholder="Ejemplo: md-maestros"
+      required
+      style="max-width: 180px; display: inline-block;"
+    />
+  </div>
   <ng-container *ngIf="selectedDatabase">
     <input
       type="text"
@@ -15,7 +38,7 @@
   <button mat-button (click)="onMenuAction1()">Generar API</button>
   <button mat-button color="accent" (click)="runQuery()">Ejecutar consulta</button>
   <!-- Botón para generar el frontend dinámico -->
-  <button (click)="generarFrontendNuevo()">Generar Frontend</button>
+  <button (click)="generarFrontend()">Generar Frontend</button>
 </mat-toolbar>
 
 <div *ngIf="loading">Cargando...</div>
@@ -113,3 +136,5 @@
     </tbody>
   </table>
 </div>
+
+<!-- ...otros campos del formulario... -->

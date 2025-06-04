@@ -240,14 +240,16 @@ async function cloneAndRenameFrontend(baseDir, destDir, replacements) {
 }
 
 app.post('/api/generar-frontend', async (req, res) => {
-  const {
-    nomBackend, Modulocamel, MODULO_MAYUS,
-    PRIMARY_KEY, BACKEND_URL, INTERFACE_FIELDS
-  } = req.body;
+  const { nomBackend, Modulocamel, MODULO_MAYUS, PRIMARY_KEY, BACKEND_URL, INTERFACE_FIELDS, estilos } = req.body;
+  console.log('Estilos seleccionados:', estilos);
   if (!nomBackend) {
     return res.status(400).json({ error: 'Falta el nombre del frontend' });
   }
-  const baseDir = path.join(__dirname, 'public', 'frontend-base', 'md-base');
+  // Selecciona la carpeta base según el framework
+  let baseFolder = 'md-base';
+  if (estilos === 'bootstrap') baseFolder = 'md-base-boot';
+  if (estilos === 'material') baseFolder = 'md-base-material';
+  const baseDir = path.join(__dirname, 'public', 'frontend-base', baseFolder);
   const destDir = path.join(__dirname, 'public', 'frontend-destino', nomBackend);
 
   const replacements = {
