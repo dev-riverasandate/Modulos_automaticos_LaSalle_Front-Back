@@ -1,0 +1,16 @@
+<h2 class="mat-headline mb-4">Eliminar registro</h2>
+<div *ngIf="item">
+  <div *ngFor="let col of columnas" class="mb-2">
+    <mat-form-field appearance="fill" class="w-100" disabled>
+      <mat-label>{{ col }}</mat-label>
+      <input matInput [value]="item[col]" disabled>
+    </mat-form-field>
+  </div>
+  <div class="d-flex justify-content-end mt-4">
+    <button mat-raised-button color="warn" (click)="eliminar()" class="me-2">Eliminar</button>
+    <button mat-raised-button color="primary" (click)="cancelar()">Cancelar</button>
+  </div>
+</div>
+<div *ngIf="!item">
+  <p class="mat-body-1 text-danger">No se encontró el registro.</p>
+</div>
