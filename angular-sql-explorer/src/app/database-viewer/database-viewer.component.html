@@ -1,44 +1,50 @@
-<mat-toolbar color="primary" style="margin-bottom: 16px;">
-  <span style="font-weight: bold;">Modulos La Salle</span>
-  <span class="spacer"></span>
-  <!-- Selector de framework de estilos -->
-  <div class="mb-3" style="margin-right: 16px;">
-    <label class="form-label fw-bold" style="margin-right: 8px;">Estilos:</label>
-    <input type="radio" id="tailwind" name="estilos" [(ngModel)]="estilos" value="tailwind" checked>
-    <label for="tailwind" style="margin-right: 8px;">Tailwind</label>
-    <input type="radio" id="bootstrap" name="estilos" [(ngModel)]="estilos" value="bootstrap">
-    <label for="bootstrap" style="margin-right: 8px;">Bootstrap</label>
-    <input type="radio" id="material" name="estilos" [(ngModel)]="estilos" value="material">
-    <label for="material" style="margin-right: 16px;">Material</label>
+<mat-toolbar color="primary" style="margin-bottom: 16px; flex-direction: column; align-items: flex-start;">
+  <div style="width: 100%; display: flex; align-items: center; flex-wrap: wrap;">
+    <!-- ...todo tu contenido actual del toolbar (título, radios, input, búsqueda, etc)... -->
+    <span style="font-weight: bold;">Modulos La Salle</span>
+    <span class="spacer"></span>
+    <!-- Selector de framework de estilos -->
+    <div class="mb-3" style="margin-right: 16px;">
+      <label class="form-label fw-bold" style="margin-right: 8px;">Estilos:</label>
+      <input type="radio" id="tailwind" name="estilos" [(ngModel)]="estilos" value="tailwind" checked>
+      <label for="tailwind" style="margin-right: 8px;">Tailwind</label>
+      <input type="radio" id="bootstrap" name="estilos" [(ngModel)]="estilos" value="bootstrap">
+      <label for="bootstrap" style="margin-right: 8px;">Bootstrap</label>
+      <input type="radio" id="material" name="estilos" [(ngModel)]="estilos" value="material">
+      <label for="material" style="margin-right: 16px;">Material</label>
+    </div>
+    <div class="mb-3" style="margin-right: 16px;">
+      <label class="form-label fw-bold" for="nombreModuloFrontend" style="margin-right: 8px;">Nombre del frontend:</label>
+      <input
+        id="nombreModuloFrontend"
+        type="text"
+        class="form-control"
+        [(ngModel)]="nombreModuloFrontend"
+        placeholder="Ejemplo: md-maestros"
+        required
+        style="max-width: 180px; display: inline-block;"
+      />
+    </div>
+    <ng-container *ngIf="selectedDatabase">
+      <input
+        type="text"
+        [(ngModel)]="tableFilter"
+        placeholder="Buscar esquema..."
+        style="margin-right: 16px; padding: 4px 8px; border-radius: 4px; border: 1px solid #ccc; min-width: 180px;"
+      />
+    </ng-container>
   </div>
-  <!-- Input para el nombre del frontend -->
-  <div class="mb-3" style="margin-right: 16px;">
-    <label class="form-label fw-bold" for="nombreModuloFrontend" style="margin-right: 8px;">Nombre del frontend:</label>
-    <input
-      id="nombreModuloFrontend"
-      type="text"
-      class="form-control"
-      [(ngModel)]="nombreModuloFrontend"
-      placeholder="Ejemplo: md-maestros"
-      required
-      style="max-width: 180px; display: inline-block;"
-    />
+  <!-- SEGUNDO RENGLÓN: SOLO LOS BOTONES -->
+  <div style="width: 100%; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;">
+    <button mat-button (click)="selectedDatabase = null; tables = []; selectedTables = []; tableColumns = {}; selectedFields = [];">
+  <mat-icon>arrow_back</mat-icon>
+</button>
+    <button mat-button (click)="onMenuAction1()"><mat-icon>code</mat-icon>Generar API</button>
+    <button mat-button color="accent" (click)="runQuery()"><mat-icon>storage</mat-icon>Consulta SQL</button>
+    <button (click)="generarFrontend()"><mat-icon>web</mat-icon>Generar Frontend</button>
+    <button mat-button (click)="abrirApiDestino()"><mat-icon>code</mat-icon>Destino API</button>
+    <button mat-button (click)="abrirFrontendDestino()"><mat-icon>web</mat-icon>Destino Front</button>
   </div>
-  <ng-container *ngIf="selectedDatabase">
-    <input
-      type="text"
-      [(ngModel)]="tableFilter"
-      placeholder="Buscar esquema..."
-      style="margin-right: 16px; padding: 4px 8px; border-radius: 4px; border: 1px solid #ccc; min-width: 180px;"
-    />
-  </ng-container>
-  <button mat-button (click)="selectedDatabase = null; tables = []; selectedTables = []; tableColumns = {}; selectedFields = [];">
-    Regresar
-  </button>
-  <button mat-button (click)="onMenuAction1()">Generar API</button>
-  <button mat-button color="accent" (click)="runQuery()">Ejecutar consulta</button>
-  <!-- Botón para generar el frontend dinámico -->
-  <button (click)="generarFrontend()">Generar Frontend</button>
 </mat-toolbar>
 
 <div *ngIf="loading">Cargando...</div>
@@ -106,7 +112,7 @@
 
   <!-- Columna 4: Script -->
   <div class="column">
-    <h4>Script</h4>
+    <h4>Sentencia SQL</h4>
     <div *ngIf="!editingSql">
       <pre>{{ generatedQuery }}</pre>
       <button mat-button (click)="startEditingSql()">Editar SQL</button>

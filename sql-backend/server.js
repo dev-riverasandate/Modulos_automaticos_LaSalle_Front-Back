@@ -4,6 +4,7 @@ const sql = require('mssql');
 const fs = require('fs');
 const fsp = require('fs/promises');
 const path = require('path');
+const { exec } = require('child_process');
 
 const app = express();
 app.use(cors());
@@ -268,6 +269,19 @@ app.post('/api/generar-frontend', async (req, res) => {
     console.error('Error al clonar frontend:', err);
     res.status(500).json({ error: err.message });
   }
+});
+
+app.get('/api/abrir-api-destino', (req, res) => {
+  const folderPath = path.join(__dirname, 'public', 'api_destino');
+  // Comando para abrir carpeta en Windows
+  exec(`start "" "${folderPath}"`);
+  res.json({ success: true, message: 'Carpeta abierta en el explorador del servidor.' });
+});
+
+app.get('/api/abrir-frontend-destino', (req, res) => {
+  const folderPath = path.join(__dirname, 'public', 'frontend-destino');
+  exec(`start "" "${folderPath}"`);
+  res.json({ success: true, message: 'Carpeta frontend-destino abierta en el explorador del servidor.' });
 });
 
 app.listen(3000, () => {

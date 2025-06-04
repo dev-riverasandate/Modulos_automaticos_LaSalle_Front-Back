@@ -556,4 +556,24 @@ generarFrontend() {
   error: err => alert('Error: ' + (err.error?.error || err.message))
 });
 }
+
+// abrirApiDestino() {
+//   this.http.get('http://localhost:3000/api/abrir-api-destino').subscribe({
+//     next: (resp: any) => alert(resp.message),
+//     error: err => alert('Error al intentar abrir la carpeta: ' + (err.error?.error || err.message))
+//   });
+// }
+abrirApiDestino() {
+  this.http.get('http://localhost:3000/api/abrir-api-destino').subscribe();
+}
+
+// abrirFrontendDestino() {
+//   this.http.get('http://localhost:3000/api/abrir-frontend-destino').subscribe({
+//     next: (resp: any) => alert(resp.message),
+//     error: err => alert('Error al intentar abrir la carpeta: ' + (err.error?.error || err.message))
+//   });
+// }
+abrirFrontendDestino() {
+  this.http.get('http://localhost:3000/api/abrir-frontend-destino').subscribe();
+}
 }
